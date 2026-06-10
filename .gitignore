@@ -1,0 +1,32 @@
+# Node.js dependencies
+**/node_modules/
+**/package-lock.json
+
+# Local runtime log files
+**/server.log
+**/*.log
+
+# User credentials and environment secrets
+**/.env
+**/apis.env
+**/*.pem
+**/*.key
+
+# Database backups and user databases (created at runtime)
+portal_web/users.json
+
+# User sandboxes, temporary uploads, results and inputs
+portal_web/uploads/*
+!portal_web/uploads/.gitkeep
+psycho_workspace/
+
+# OpenClaw runtime logs, lock files and dynamic session history files
+agente_openclaw/sessions/*
+!agente_openclaw/sessions/.gitkeep
+agente_openclaw/.openclaw/
+agente_openclaw/agent/
+
+# Operating system / IDE files
+.DS_Store
+.vscode/
+.idea/

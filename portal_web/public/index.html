@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evaluador Psicolingüístico 🧠 - Portal Web</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Auth Page (Initially Visible if not logged in) -->
+    <div id="auth-container" class="auth-container">
+        <div class="auth-card" style="position: relative;">
+            <select id="auth-lang-select" style="position: absolute; top: 16px; right: 20px; padding: 6px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; font-family: inherit; background-color: var(--bg-app); color: var(--text-main); cursor: pointer; outline: none; transition: all 0.2s;">
+                <option value="es">Español 🇪🇸</option>
+                <option value="en">English 🇬🇧</option>
+            </select>
+
+            <div class="auth-header">
+                <span class="auth-logo">🧠</span>
+                <h2 id="auth-title">Acceso Científico</h2>
+                <p id="auth-subtitle">Framework de Evaluación Psicolingüística</p>
+            </div>
+
+            <!-- Login Form -->
+            <form id="login-form" class="auth-form">
+                <div class="form-group">
+                    <label for="login-username">👤 Nombre de usuario</label>
+                    <input type="text" id="login-username" name="username" placeholder="Tu usuario" required>
+                </div>
+                <div class="form-group">
+                    <label for="login-password">🔒 Contraseña</label>
+                    <input type="password" id="login-password" name="password" placeholder="Tu contraseña" required>
+                </div>
+                <button type="submit" id="login-btn" class="submit-btn">Entrar 🔓</button>
+                <p class="auth-toggle"><a href="#" id="go-to-register">¿No tienes cuenta? Registrar nueva cuenta</a></p>
+            </form>
+
+            <!-- Register Form (Hidden initially) -->
+            <form id="register-form" class="auth-form hidden">
+                <div class="form-group">
+                    <label for="reg-username">👤 Crear nombre de usuario</label>
+                    <input type="text" id="reg-username" name="username" placeholder="Solo minúsculas, números o guiones bajos" required>
+                    <small class="help-text">Será el nombre de tu carpeta de experimentos.</small>
+                </div>
+                <div class="form-group">
+                    <label for="reg-password">🔒 Crear contraseña</label>
+                    <input type="password" id="reg-password" name="password" placeholder="Mínimo 6 caracteres" required>
+                </div>
+                <div class="form-group">
+                    <label for="reg-language">🌐 Idioma del Agente / Agent Language</label>
+                    <select id="reg-language" name="language" required>
+                        <option value="es" selected>Español 🇪🇸</option>
+                        <option value="en">English 🇬🇧</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="reg-system-key">🔑 Clave de acceso del sistema</label>
+                    <input type="password" id="reg-system-key" name="systemKey" placeholder="Clave institucional de autorización" required>
+                    <small class="help-text">Clave de sistema requerida para autorizar tu registro.</small>
+                </div>
+                <button type="submit" id="register-btn" class="submit-btn">Registrarse y Entrar 🚀</button>
+                <p class="auth-toggle"><a href="#" id="go-to-login">¿Ya tienes cuenta? Iniciar sesión</a></p>
+            </form>
+            
+            <div id="auth-error" class="auth-error hidden"></div>
+        </div>
+    </div>
+
+    <!-- Main App Container (Hidden initially until authenticated) -->
+    <div id="main-app" class="app-container hidden">
+        <!-- Sidebar - Configuración (Hidden in chat-only layout) -->
+        <aside class="sidebar hidden">
+            <div class="sidebar-header">
+                <div class="logo-row">
+                    <span class="icon">🧠</span>
+                    <div>
+                        <h2>Evaluador</h2>
+                        <p class="subtitle">UPM Research Framework</p>
+                    </div>
+                </div>
+            </div>
+            
+            <form id="experiment-form" class="config-form">
+                <!-- Keep fields for compatibility but hidden -->
+            </form>
+        </aside>
+
+        <!-- Main Chat Area -->
+        <main class="chat-container">
+            <header class="chat-header">
+                <div class="agent-status">
+                    <div class="status-indicator online"></div>
+                    <div>
+                        <h3 id="agent-header-title">Chat del Agente Psicolingüístico</h3>
+                        <p id="system-status">Listo para procesar tu experimento</p>
+                    </div>
+                </div>
+                <div class="header-actions" style="display: flex; align-items: center; gap: 12px;">
+                    <!-- Front-end UI Language Selector -->
+                    <select id="app-lang-select" style="padding: 6px 10px; border: 1px solid var(--border); border-radius: 20px; font-size: 12px; font-family: inherit; font-weight: bold; cursor: pointer; background: white; outline: none; color: var(--text-main); transition: all 0.2s;">
+                        <option value="es">Español 🇪🇸</option>
+                        <option value="en">English 🇬🇧</option>
+                    </select>
+                    <div class="user-badge-container" style="margin: 0; padding: 4px 12px;">
+                        <span class="user-badge" style="font-size: 13px;">👤 <span id="current-user-display">Usuario</span></span>
+                    </div>
+                    <button id="logout-btn" class="logout-btn-link" style="padding: 6px 12px; font-weight: bold; font-size: 13px; border: 1px solid var(--border); border-radius: 20px;" title="Cerrar Sesión">Salir 🚪</button>
+                    <button id="clear-chat" class="icon-btn" title="Limpiar chat">🗑️</button>
+                </div>
+            </header>
+
+            <div id="chat-messages" class="chat-messages">
+                <!-- Welcome Message -->
+                <div class="message assistant">
+                    <div class="avatar">🧠</div>
+                    <div class="message-content">
+                        <p>¡Hola! Bienvenido al <strong>Portal de Evaluación Psicolingüística</strong>.</p>
+                        <p>Para comenzar tu experimento de manera rápida y sencilla, puedes darme todas las instrucciones y enviarme los datos directamente por este chat (como en Slack):</p>
+                        <ol>
+                            <li>Haz clic en el botón de clip 📎 para subir tu <strong>archivo Excel o CSV</strong> de palabras.</li>
+                            <li>Dime qué <strong>característica psicolingüística</strong> deseas evaluar (ej. concreción, familiaridad, valencia emocional, etc.), qué <strong>modelo</strong> prefieres usar y el nombre de la <strong>columna</strong> de las palabras.</li>
+                            <li>Ejecutaré el proceso científico en el servidor y te entregaré el <strong>ZIP de resultados</strong> y el <strong>XLSX final</strong> directamente aquí para que los descargues en un clic.</li>
+                        </ol>
+                        <p>¿Qué te gustaría evaluar hoy? ¡Sube tu archivo o escríbeme para comenzar! 🧠🚀</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat Input Area -->
+            <div class="chat-input-area">
+                <!-- Hidden file input for chat attachments -->
+                <input type="file" id="chat-file-input" class="hidden" accept=".xlsx,.csv">
+                <button id="attach-btn" class="icon-btn" style="font-size: 20px; background-color: #f1f5f9; width: 42px; height: 42px; border-radius: 50%; min-width: 42px;" title="Adjuntar archivo Excel/CSV">📎</button>
+                <input type="text" id="chat-input" placeholder="Pregúntale al Agente Psicolingüístico sobre tu experimento..." autocomplete="off">
+                <button id="send-chat-btn" class="send-btn">Enviar ✉️</button>
+            </div>
+
+            <!-- Terminal/Console log panel drawer (Collapsible) -->
+            <div id="console-drawer" class="console-drawer collapsed">
+                <div class="console-header" id="toggle-console">
+                    <span>📜 Consola de ejecución en tiempo real (Python Logs)</span>
+                    <span class="toggle-arrow">▲</span>
+                </div>
+                <div id="console-logs" class="console-logs">
+                    <div class="console-line system">[SISTEMA] Consola abierta. Los logs de los scripts de Python aparecerán aquí en vivo...</div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script src="app.js"></script>
+</body>
+</html>
