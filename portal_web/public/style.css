@@ -518,6 +518,9 @@ code {
   line-height: 1.6;
   box-shadow: var(--shadow-sm);
   color: var(--text-main);
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  max-width: 100%;
 }
 
 .message.user .message-content {
