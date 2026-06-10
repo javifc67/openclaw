@@ -98,7 +98,7 @@ export function appendMessage(container, sender, htmlContent) {
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${sender}`;
     
-    const avatar = sender === 'assistant' ? '🧠' : '👤';
+    const avatar = sender === 'assistant' ? '<img src="img/logo.png" alt="Logo">' : '👤';
     
     messageDiv.innerHTML = `
         <div class="avatar">${avatar}</div>
