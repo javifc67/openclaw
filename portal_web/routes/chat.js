@@ -150,6 +150,11 @@ router.get('/chat-history', requireAuth, async (req, res) => {
       // Clean up internal thinking tags if any
       text = text.replace(/<think>[\s\S]*?<\/think>/g, '');
 
+      // Skip cron system prompts from the chat history UI
+      if (item.role === 'user' && text.includes('cron_check_experiment.py')) {
+        continue;
+      }
+
       // Clean prompt context wrappers
       if (item.role === 'user' && text.includes('[Current message - respond to this]')) {
         const parts = text.split('[Current message - respond to this]');
