@@ -3,5 +3,6 @@ export const state = {
     userLanguage: 'es',
     chatHistory: [],
     eventSource: null,
-    currentUsername: ''
+    currentUsername: '',
+    isWelcomeShowing: false
 };

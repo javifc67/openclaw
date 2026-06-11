@@ -53,8 +53,8 @@ router.post('/chat', requireAuth, async (req, res) => {
     const sessionKey = `agent:psycho-agent:webchat-user:${sessionUser}`;
 
     const systemPrompt = sessionLanguage === 'en'
-      ? { role: 'system', content: 'IMPORTANT: The user has selected English as their preferred language. You MUST always speak, reply, explain everything, and interact in English.' }
-      : { role: 'system', content: 'IMPORTANT: El usuario ha seleccionado Español como su idioma preferido. Debes hablar, responder, explicar todo y interactuar siempre en Español.' };
+      ? { role: 'system', content: 'IMPORTANT: The user has selected English as their preferred language. You MUST always speak, reply, explain everything, and interact in English. Note: The user has already read the welcome message in the UI explaining the evaluation steps. Do NOT introduce yourself or repeat the welcome steps or menus. Simply greet them shortly, ask how you can help, or guide them directly based on their query. CRITICAL: Fine-tuning is NOT supported or available at this time. Omit any mention of fine-tuning or training models. Focus ONLY on direct word evaluation/norming (Zero-shot/Few-shot).' }
+      : { role: 'system', content: 'IMPORTANT: El usuario ha seleccionado Español como su idioma preferido. Debes hablar, responder, explicar todo y interactuar siempre en Español. Nota: El usuario ya ha leído el mensaje de bienvenida en la interfaz de usuario con los pasos para subir el archivo y realizar la evaluación. NO te presentes de forma genérica, ni repitas los pasos o menús de bienvenida. Salúdalos de forma breve y directa, pregúntales en qué puedes ayudarles o guíalos directamente según su consulta. CRÍTICO: El ajuste fino (Fine-tuning) NO está soportado ni disponible en este momento. Omítelo por completo. Céntrate ÚNICAMENTE en la evaluación directa de palabras/normado psicolingüístico (Zero-shot/Few-shot).' };
 
     const messagesWithInstruction = [systemPrompt, ...recentMessages];
 
@@ -87,7 +87,8 @@ router.post('/chat', requireAuth, async (req, res) => {
     }
 
     // Deduplicate the session file on disk to prevent future alignment issues!
-    deduplicateUserSessionFile(sessionUser);
+    // Commented out to prevent EmbeddedAttemptSessionTakeoverError in OpenClaw when cron checks run.
+    // deduplicateUserSessionFile(sessionUser);
 
     res.json({ reply: formattedReply });
   } catch (err) {
@@ -107,7 +108,8 @@ router.get('/chat-history', requireAuth, async (req, res) => {
     const sessionUser = req.session.user.username;
     
     // Deduplicate on disk before loading history!
-    deduplicateUserSessionFile(sessionUser);
+    // Commented out to prevent EmbeddedAttemptSessionTakeoverError in OpenClaw when cron checks run.
+    // deduplicateUserSessionFile(sessionUser);
 
     const sessionKey = `agent:psycho-agent:webchat-user:${sessionUser}`;
 

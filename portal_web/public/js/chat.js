@@ -10,12 +10,9 @@ export function initChat({ showAuth }) {
     const chatFileInput = document.getElementById('chat-file-input');
     const attachBtn = document.getElementById('attach-btn');
 
-    function showWelcomeMessage() {
-        chatMessages.innerHTML = '';
-        
-        let welcomeText = '';
-        if (state.userLanguage === 'en') {
-            welcomeText = `# Introduction
+    function getWelcomeText(lang) {
+        if (lang === 'en') {
+            return `# Introduction
 
 Welcome to the **ChatWords2.0 Psycholinguistic Evaluation Portal**.
 
@@ -28,7 +25,7 @@ This chatbot is designed to **automatically run psycholinguistic feature evaluat
 
 **What would you like to evaluate today?** Upload your file or write to me to get started! 🧠🚀`;
         } else {
-            welcomeText = `# Introducción
+            return `# Introducción
 
 Bienvenido al **Portal de Evaluación Psicolingüística ChatWords2.0**.
 
@@ -41,9 +38,14 @@ Este chatbot está diseñado para **ejecutar automáticamente experimentos de ev
 
 **¿Qué te gustaría evaluar hoy?** ¡Sube tu archivo o escríbeme para comenzar! 🧠🚀`;
         }
+    }
 
+    function showWelcomeMessage() {
+        chatMessages.innerHTML = '';
+        const welcomeText = getWelcomeText(state.userLanguage);
         appendMessage(chatMessages, 'assistant', formatMarkdown(welcomeText));
-        state.chatHistory = [{ role: 'assistant', content: welcomeText }];
+        state.chatHistory = [];
+        state.isWelcomeShowing = true;
     }
 
     async function loadHistory() {
@@ -53,7 +55,13 @@ Este chatbot está diseñado para **ejecutar automáticamente experimentos de ev
             
             if (data.history && data.history.length > 0) {
                 chatMessages.innerHTML = '';
+                
+                // Siempre mostrar el mensaje de bienvenida local al principio de la pantalla
+                const welcomeText = getWelcomeText(state.userLanguage);
+                appendMessage(chatMessages, 'assistant', formatMarkdown(welcomeText));
+                
                 state.chatHistory = [];
+                state.isWelcomeShowing = true; // Mantenerlo activo para futuras actualizaciones del sondeo
                 
                 data.history.forEach(msg => {
                     if (msg.content && msg.content.trim()) {
@@ -286,9 +294,100 @@ Welcome...`;
         }
     });
 
+    let pollingInterval = null;
+
+    function startPolling() {
+        if (pollingInterval) return;
+        pollingInterval = setInterval(async () => {
+            // Solo consultar si el usuario ha iniciado sesión y no está enviando un mensaje actualmente
+            if (!state.currentUsername || chatInput.disabled) return;
+            
+            try {
+                const res = await fetch('/api/chat-history');
+                if (res.status === 401 || res.status === 403) {
+                    stopPolling();
+                    if (typeof showAuth === 'function') showAuth();
+                    return;
+                }
+                if (!res.ok) return;
+                const data = await res.json();
+                
+                if (data.history && Array.isArray(data.history)) {
+                    // Filtrar mensajes vacíos
+                    const validHistory = data.history.filter(msg => msg.content && msg.content.trim());
+                    
+                    // Si el historial del servidor está vacío, el estado esperado en el cliente es el mensaje de bienvenida
+                    if (validHistory.length === 0) {
+                        if (!state.isWelcomeShowing) {
+                            console.log('[Sondeo Chat] Servidor sin historial. Mostrando mensaje de bienvenida...');
+                            showWelcomeMessage();
+                        }
+                        return; // Ya está alineado, detenemos aquí
+                    }
+                    
+                    // Si el servidor tiene historial real, verificamos si hay diferencias
+                    let hasChanges = false;
+                    
+                    if (validHistory.length !== state.chatHistory.length) {
+                        hasChanges = true;
+                    } else {
+                        // Comparar elemento por elemento
+                        for (let i = 0; i < validHistory.length; i++) {
+                            if (validHistory[i].role !== state.chatHistory[i].role || 
+                                validHistory[i].content !== state.chatHistory[i].content) {
+                                hasChanges = true;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    if (hasChanges) {
+                        console.log('[Sondeo Chat] Cambio detectado en el historial de chat, actualizando UI...');
+                        chatMessages.innerHTML = '';
+                        
+                        // Si la bienvenida estaba mostrándose en esta pestaña, la mantenemos al principio de la pantalla
+                        if (state.isWelcomeShowing) {
+                            const welcomeText = getWelcomeText(state.userLanguage);
+                            appendMessage(chatMessages, 'assistant', formatMarkdown(welcomeText));
+                        }
+                        
+                        state.chatHistory = [];
+                        validHistory.forEach(msg => {
+                            appendMessage(chatMessages, msg.role, formatMarkdown(msg.content));
+                            state.chatHistory.push(msg);
+                        });
+                        chatMessages.scrollTop = chatMessages.scrollHeight;
+                    }
+                }
+            } catch (err) {
+                console.error('Error en sondeo (polling) del chat:', err);
+            }
+        }, 4000); // Consultar cada 4 segundos
+    }
+
+    function stopPolling() {
+        if (pollingInterval) {
+            clearInterval(pollingInterval);
+            pollingInterval = null;
+        }
+    }
+
+    // Detener/Iniciar sondeo según visibilidad de la pestaña para ahorrar recursos
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            stopPolling();
+        } else {
+            if (state.currentUsername) {
+                startPolling();
+            }
+        }
+    });
+
     return {
         loadHistory,
         showWelcomeMessage,
-        sendUserChatMessage
+        sendUserChatMessage,
+        startPolling,
+        stopPolling
     };
 }

@@ -27,8 +27,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const authModule = initAuth({
         onLoginSuccess: () => {
             chatModule.loadHistory();
+            chatModule.startPolling();
         },
         onLogoutSuccess: () => {
+            chatModule.stopPolling();
             if (state.eventSource) {
                 state.eventSource.close();
             }
