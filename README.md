@@ -27,7 +27,7 @@ Node.js (v18.0.0 or higher) is required to run both OpenClaw and the web portal.
 ### 2. Python 3 & Required Libraries
 Python 3.10+ is required to execute the evaluation scripts. Install the required packages globally or in user space:
 ```bash
-pip install pandas openxl pyyaml openai google-genai jsonlines python-dotenv
+pip install pandas openpyxl pyyaml openai google-genai jsonlines python-dotenv
 # Note: If running on Debian/Ubuntu, you may need to use `--break-system-packages` if installing globally.
 ```
 
@@ -74,7 +74,7 @@ OpenClaw expects agent configurations under the `~/.openclaw/agents/` directory.
    {
      "id": "psycho-agent",
      "name": "Evaluador Psicolingüístico",
-     "workspace": "/home/YOUR_USERNAME/.openclaw/agents/psycho-agent/workspace",
+     "workspace": "/home/YOUR_USERNAME/.openclaw/agents/psycho-agent",
      "thinkingDefault": "off"
    }
    ```

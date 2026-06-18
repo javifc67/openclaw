@@ -41,15 +41,15 @@
     - Solo cuando el usuario te dé su confirmación por el chat, procederás al Paso 4 (ejecución del pipeline).
 4.  **Run Pipeline via Cron (Evita bloqueos de sesión y bloqueos de archivos):**
     - Para evitar que la sesión de OpenClaw se bloquee (SessionWriteLockTimeoutError / error 500) y que los archivos se queden bloqueados, NUNCA ejecutes la espera de lotes en un hilo de chat activo. En su lugar, usa el sistema de tareas en segundo plano de Cron de OpenClaw de la siguiente manera:
-    - **Preparar:** `python3 /home/jobibi/Escritorio/psycholinguistics_framework/prepare_experiment.py /home/jobibi/Escritorio/psycho_workspace/<NOMBRE_USUARIO>/experimento_<N> <EXPERIMENT_NAME>`
+    - **Preparar:** `python3 ~/Escritorio/psycholinguistics_framework/prepare_experiment.py ~/Escritorio/psycho_workspace/<NOMBRE_USUARIO>/experimento_<N> <EXPERIMENT_NAME>`
     - **Enviar a OpenAI (Rápido):** Ejecuta el script de ejecución añadiendo la bandera `--submit-only` para que envíe los lotes a OpenAI, cree el archivo `submitted_batches.json` y finalice inmediatamente:
-      `python3 /home/jobibi/Escritorio/psycholinguistics_framework/execute_experiment.py /home/jobibi/Escritorio/psycho_workspace/<NOMBRE_USUARIO>/experimento_<N> <EXPERIMENT_NAME> --submit-only`
+      `python3 ~/Escritorio/psycholinguistics_framework/execute_experiment.py ~/Escritorio/psycho_workspace/<NOMBRE_USUARIO>/experimento_<N> <EXPERIMENT_NAME> --submit-only`
     - **Crear Tarea Cron:** Inmediatamente después, crea un trabajo de Cron en OpenClaw que se ejecute cada 30 minutos (o el intervalo acordado con el usuario):
       - **Nombre:** `Monitor - <NOMBRE_USUARIO> - experimento_<N>`
       - **Schedule:** Cada 30 minutos (`{ "kind": "every", "everyMs": 1800000 }` o similar).
       - **sessionTarget:** `current` (Esto vincula la tarea directamente al chat del usuario activo para que las actualizaciones se publiquen e informen en tiempo real).
       - **Payload:** Un `agentTurn` con el siguiente prompt exacto:
-        `Ejecuta el script /home/jobibi/Escritorio/psycholinguistics_framework/cron_check_experiment.py --exp-path /home/jobibi/Escritorio/psycho_workspace/<NOMBRE_USUARIO>/experimento_<N> --prefix <EXPERIMENT_NAME> --mode <MODE> --language <LANG>.
+        `Ejecuta el script ~/Escritorio/psycholinguistics_framework/cron_check_experiment.py --exp-path ~/Escritorio/psycho_workspace/<NOMBRE_USUARIO>/experimento_<N> --prefix <EXPERIMENT_NAME> --mode <MODE> --language <LANG>.
         
         Sigue estas reglas exactas:
         1. Di al usuario exactamente el progreso o mensaje de éxito/error que ha imprimido el script en su salida (elimina de tu respuesta final cualquier línea de log administrativa o que empiece por '[2026-' o 'STATUS:').

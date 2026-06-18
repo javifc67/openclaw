@@ -3,7 +3,7 @@
     {
       "id": "psycho-agent",
       "name": "Evaluador Psicolingüístico",
-      "workspace": "/home/YOUR_USERNAME/.openclaw/agents/psycho-agent/workspace",
+      "workspace": "/home/YOUR_USERNAME/.openclaw/agents/psycho-agent",
       "thinkingDefault": "off"
     }
   ],
