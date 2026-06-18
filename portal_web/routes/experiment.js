@@ -197,9 +197,13 @@ router.get('/download-result', requireAuth, (req, res) => {
     return res.status(400).send('Falta la ruta del archivo.');
   }
 
+  // Resolve relative paths to absolute paths before security check and file access
+  const absolutePath = path.resolve(filePath);
+  console.log(`[Download Result] Resolved absolute filePath: ${absolutePath}`);
+
   // Security: Only allow downloading files within the authorized workspaces
-  const isInsideWorkspace = filePath.startsWith(path.join(os.homedir(), 'Escritorio/psycho_workspace')) || 
-                            filePath.startsWith(path.join(os.homedir(), '.openclaw/workspace'));
+  const isInsideWorkspace = absolutePath.startsWith(path.join(os.homedir(), 'Escritorio/psycho_workspace')) || 
+                            absolutePath.startsWith(path.join(os.homedir(), '.openclaw/workspace'));
   
   console.log(`[Download Result] isInsideWorkspace check: ${isInsideWorkspace}`);
   if (!isInsideWorkspace) {
@@ -207,15 +211,15 @@ router.get('/download-result', requireAuth, (req, res) => {
     return res.status(403).send('No tienes permisos para descargar este archivo.');
   }
 
-  const fileExists = fs.existsSync(filePath);
+  const fileExists = fs.existsSync(absolutePath);
   console.log(`[Download Result] File exists check: ${fileExists}`);
   if (!fileExists) {
-    console.warn(`[Download Result] File not found on disk: ${filePath}`);
+    console.warn(`[Download Result] File not found on disk: ${absolutePath}`);
     return res.status(404).send('El archivo solicitado no existe.');
   }
 
-  console.log(`[Download Result] Initiating res.download for: ${filePath}`);
-  res.download(filePath, (err) => {
+  console.log(`[Download Result] Initiating res.download for: ${absolutePath}`);
+  res.download(absolutePath, (err) => {
     if (err) {
       console.error(`[Download Result] Error during res.download:`, err);
       if (!res.headersSent) {
