@@ -5,8 +5,9 @@ const fs = require('fs');
 const os = require('os');
 const { OpenAI } = require('openai');
 const config = require('../config');
-const { requireAuth, getOpenClawConfig, ensureOpenClawSessionRegistered, formatReplyWithMedia } = require('../utils/helpers');
+const { requireAuth, ensureOpenClawSessionRegistered, formatReplyWithMedia } = require('../utils/helpers');
 const { deduplicateUserSessionFile } = require('../utils/deduplicator');
+const dockerService = require('../services/dockerService');
 
 const router = express.Router();
 
@@ -33,22 +34,25 @@ router.post('/chat', requireAuth, async (req, res) => {
   }
 
   try {
-    const clawConfig = getOpenClawConfig();
-    if (!clawConfig.token) {
-      return res.status(500).json({ error: 'No se encontró el token de acceso en la configuración de OpenClaw.' });
+    const sessionUser = req.session.user.username;
+    const sessionLanguage = req.session.user.language || 'es';
+
+    // 1. Ensure the user's OpenClaw session is registered on disk before the container starts
+    ensureOpenClawSessionRegistered(sessionUser);
+
+    // 2. Start/resume the user's Docker container and retrieve its port and secure token
+    const userConfig = await dockerService.startUserContainer(sessionUser);
+    if (!userConfig.token) {
+      return res.status(500).json({ error: 'No se pudo generar u obtener el token de seguridad del agente OpenClaw del usuario.' });
     }
 
     const openai = new OpenAI({
-      apiKey: clawConfig.token,
-      baseURL: `http://127.0.0.1:${clawConfig.port}/v1`
+      apiKey: userConfig.token,
+      baseURL: `http://127.0.0.1:${userConfig.port}/v1`
     });
     
     // Send only last 15 messages to keep token usage low and fast
     const recentMessages = messages.slice(-15);
-
-    const sessionUser = req.session.user.username;
-    const sessionLanguage = req.session.user.language || 'es';
-    ensureOpenClawSessionRegistered(sessionUser);
 
     const sessionKey = `agent:psycho-agent:webchat-user:${sessionUser}`;
 
@@ -100,25 +104,25 @@ router.post('/chat', requireAuth, async (req, res) => {
 // Endpoint to fetch the session's conversational history from OpenClaw
 router.get('/chat-history', requireAuth, async (req, res) => {
   try {
-    const clawConfig = getOpenClawConfig();
-    if (!clawConfig.token) {
-      return res.status(500).json({ error: 'No se encontró el token de acceso en la configuración de OpenClaw.' });
-    }
-
     const sessionUser = req.session.user.username;
-    
-    // Deduplicate on disk before loading history!
-    // Commented out to prevent EmbeddedAttemptSessionTakeoverError in OpenClaw when cron checks run.
-    // deduplicateUserSessionFile(sessionUser);
+
+    // 1. Register activity to keep the container alive
+    dockerService.registerUserActivity(sessionUser);
+
+    // 2. Start/resume the user's Docker container and retrieve its port and secure token
+    const userConfig = await dockerService.startUserContainer(sessionUser);
+    if (!userConfig.token) {
+      return res.status(500).json({ error: 'No se pudo generar u obtener el token de seguridad del agente OpenClaw del usuario.' });
+    }
 
     const sessionKey = `agent:psycho-agent:webchat-user:${sessionUser}`;
 
-    const fetchUrl = `http://127.0.0.1:${clawConfig.port}/sessions/${sessionKey}/history`;
+    const fetchUrl = `http://127.0.0.1:${userConfig.port}/sessions/${sessionKey}/history`;
     
     const response = await fetch(fetchUrl, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${clawConfig.token}`
+        'Authorization': `Bearer ${userConfig.token}`
       }
     });
 
@@ -192,9 +196,14 @@ router.get('/chat-history', requireAuth, async (req, res) => {
 router.post('/clear-chat', requireAuth, async (req, res) => {
   try {
     const sessionUser = req.session.user.username;
+    
+    // Register activity to keep the container alive
+    dockerService.registerUserActivity(sessionUser);
+
     const sessionKey = `agent:psycho-agent:webchat-user:${sessionUser}`;
-    const sessionsPath = path.join(os.homedir(), '.openclaw/agents/psycho-agent/sessions/sessions.json');
-    const sessionsDir = path.join(os.homedir(), '.openclaw/agents/psycho-agent/sessions');
+    const userOpenClawDir = path.join(config.BASE_WORKSPACE, sessionUser, '.openclaw');
+    const sessionsPath = path.join(userOpenClawDir, 'agents/psycho-agent/sessions/sessions.json');
+    const sessionsDir = path.join(userOpenClawDir, 'agents/psycho-agent/sessions');
 
     if (fs.existsSync(sessionsPath)) {
       const sessions = JSON.parse(fs.readFileSync(sessionsPath, 'utf-8'));

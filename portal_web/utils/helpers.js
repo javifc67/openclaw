@@ -59,31 +59,40 @@ function getOpenClawConfig() {
 
 // Ensure Webchat user is registered in psycho-agent sessions DB
 function ensureOpenClawSessionRegistered(username) {
-  const sessionsPath = path.join(os.homedir(), '.openclaw/agents/psycho-agent/sessions/sessions.json');
-  if (!fs.existsSync(sessionsPath)) return;
+  const userOpenClawDir = path.join(config.BASE_WORKSPACE, username, '.openclaw');
+  const sessionsDir = path.join(userOpenClawDir, 'agents/psycho-agent/sessions');
+  const sessionsPath = path.join(sessionsDir, 'sessions.json');
 
-  try {
-    const raw = fs.readFileSync(sessionsPath, 'utf-8');
-    const sessions = JSON.parse(raw);
-    const sessionKey = `agent:psycho-agent:webchat-user:${username}`;
+  if (!fs.existsSync(sessionsDir)) {
+    fs.mkdirSync(sessionsDir, { recursive: true });
+  }
 
-    if (!sessions[sessionKey]) {
-      const now = Date.now();
-      const displayName = `${username.charAt(0).toUpperCase() + username.slice(1)} WEB`;
-      sessions[sessionKey] = {
-        sessionId: crypto.randomUUID(),
-        updatedAt: now,
-        sessionStartedAt: now,
-        lastInteractionAt: now,
-        displayName: displayName,
-        subject: displayName,
-        chatType: 'direct'
-      };
-      fs.writeFileSync(sessionsPath, JSON.stringify(sessions, null, 2), 'utf-8');
-      console.log(`[OpenClaw Registration] Registered new session key for ${username}: ${sessionKey}`);
+  let sessions = {};
+  if (fs.existsSync(sessionsPath)) {
+    try {
+      const raw = fs.readFileSync(sessionsPath, 'utf-8');
+      sessions = JSON.parse(raw);
+    } catch (err) {
+      console.error('Error parsing sessions.json, resetting:', err);
     }
-  } catch (err) {
-    console.error('Error ensuring OpenClaw session is registered:', err);
+  }
+
+  const sessionKey = `agent:psycho-agent:webchat-user:${username}`;
+
+  if (!sessions[sessionKey]) {
+    const now = Date.now();
+    const displayName = `${username.charAt(0).toUpperCase() + username.slice(1)} WEB`;
+    sessions[sessionKey] = {
+      sessionId: crypto.randomUUID(),
+      updatedAt: now,
+      sessionStartedAt: now,
+      lastInteractionAt: now,
+      displayName: displayName,
+      subject: displayName,
+      chatType: 'direct'
+    };
+    fs.writeFileSync(sessionsPath, JSON.stringify(sessions, null, 2), 'utf-8');
+    console.log(`[OpenClaw Registration] Registered new session key for ${username}: ${sessionKey}`);
   }
 }
 
