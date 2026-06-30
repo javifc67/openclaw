@@ -37,6 +37,17 @@ OpenClaw is the framework that manages the agent. Install OpenClaw globally:
 npm install -g openclaw
 ```
 
+### 4. Psycholinguistics Framework Repository
+The portal and the agent require the core psycholinguistics framework scripts to execute the evaluations.
+Clone the framework repository into your user directory (Desktop/Escritorio or home folder):
+```bash
+# For English locale systems (creates ~/Desktop/psycholinguistics_framework):
+git clone https://github.com/WordsGPT/psycholinguistics_framework.git ~/Desktop/psycholinguistics_framework
+
+# For Spanish locale systems (creates ~/Escritorio/psycholinguistics_framework):
+git clone https://github.com/WordsGPT/psycholinguistics_framework.git ~/Escritorio/psycholinguistics_framework
+```
+
 ---
 
 ## Step-by-Step Deployment Guide
@@ -44,18 +55,26 @@ npm install -g openclaw
 Follow these steps to deploy the portal on your new server or workstation:
 
 ### Step 1: Clone the Repository
-Clone this deployment repository to your desired path on the target machine:
+Clone this deployment repository to your desired path on the target machine. By default, it will create a folder named `openclaw`:
 ```bash
-git clone <your-repository-url> ~/Escritorio/psycholinguistics_deployment
-cd ~/Escritorio/psycholinguistics_deployment
+# For English systems (clones to ~/Desktop/openclaw):
+cd ~/Desktop
+git clone https://github.com/javifc67/openclaw.git
+
+# For Spanish systems (clones to ~/Escritorio/openclaw):
+cd ~/Escritorio
+git clone https://github.com/javifc67/openclaw.git
 ```
 
 ### Step 2: Install Portal Dependencies
-Navigate to the web portal directory and install the required npm packages:
+Navigate to the web portal directory inside the cloned repo and install the required npm packages:
 ```bash
-cd portal_web
+# English system:
+cd ~/Desktop/openclaw/portal_web
+# Spanish system:
+# cd ~/Escritorio/openclaw/portal_web
+
 npm install
-cd ..
 ```
 
 ### Step 3: Register and Configure the OpenClaw Agent
@@ -65,9 +84,12 @@ OpenClaw expects agent configurations under the `~/.openclaw/agents/` directory.
    ```bash
    mkdir -p ~/.openclaw/agents/psycho-agent
    ```
-2. **Copy the agent files** from the deployment repository to your active OpenClaw directory:
+2. **Copy the agent files** from the deployment repository to your active OpenClaw directory. Make sure you run this from the cloned repository root folder:
    ```bash
-   cp -r agente_openclaw/* ~/.openclaw/agents/psycho-agent/
+   # English system:
+   cp -r ~/Desktop/openclaw/agente_openclaw/* ~/.openclaw/agents/psycho-agent/
+   # Spanish system:
+   # cp -r ~/Escritorio/openclaw/agente_openclaw/* ~/.openclaw/agents/psycho-agent/
    ```
 3. **Register the agent** inside your global `~/.openclaw/openclaw.json` configuration file. Open the file and append the following agent block to the `"agents"` array (you can find a complete JSON template in `templates/openclaw-agent-config.json`):
    ```json
@@ -91,7 +113,7 @@ We have provided systemd service templates in the `templates/` folder:
 - `openclaw-gateway.service`
 - `psycholinguistics-portal.service`
 
-Copy these template files into your local systemd config directory:
+First, make sure you are in the cloned repository directory (e.g. `~/Desktop/openclaw` or `~/Escritorio/openclaw`), then copy these template files into your local systemd config directory:
 ```bash
 mkdir -p ~/.config/systemd/user/
 cp templates/*.service ~/.config/systemd/user/
@@ -101,7 +123,9 @@ cp templates/*.service ~/.config/systemd/user/
 Open and edit the copied service files to ensure they point to the correct absolute paths of your new machine's home directory:
 
 1. **Verify `~/.config/systemd/user/openclaw-gateway.service`** (specifically check that the node binary and home variables point to your username path).
-2. **Verify `~/.config/systemd/user/psycholinguistics-portal.service`** (ensure `WorkingDirectory`, `ExecStart`, and log paths match your repository directory).
+2. **Verify `~/.config/systemd/user/psycholinguistics-portal.service`**:
+   - Ensure the `WorkingDirectory` variable matches the absolute path to your `portal_web` folder (e.g. `%h/Desktop/openclaw/portal_web` or `%h/Escritorio/openclaw/portal_web`).
+   - Note: The service logs directly to the system journal (journald) automatically, which prevents startups from crashing if custom output paths are missing.
 
 ### Step 3: Enable and Start Services
 Run the following commands to reload systemd, enable automatic startup on boot, and spin up the services:
@@ -130,7 +154,7 @@ systemctl --user status openclaw-gateway.service
 systemctl --user status psycholinguistics-portal.service
 ```
 
-Logs are actively appended to `portal_web/server.log` for the portal, and standard journalctl logs can be accessed with:
+Standard journalctl logs can be accessed with:
 ```bash
 journalctl --user -u psycholinguistics-portal.service -f
 ```

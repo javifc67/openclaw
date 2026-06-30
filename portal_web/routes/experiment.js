@@ -202,7 +202,7 @@ router.get('/download-result', requireAuth, (req, res) => {
   console.log(`[Download Result] Resolved absolute filePath: ${absolutePath}`);
 
   // Security: Only allow downloading files within the authorized workspaces
-  const isInsideWorkspace = absolutePath.startsWith(path.join(os.homedir(), 'Escritorio/psycho_workspace')) || 
+  const isInsideWorkspace = absolutePath.startsWith(path.dirname(config.BASE_WORKSPACE)) || 
                             absolutePath.startsWith(path.join(os.homedir(), '.openclaw/workspace'));
   
   console.log(`[Download Result] isInsideWorkspace check: ${isInsideWorkspace}`);

@@ -4,14 +4,16 @@ After=network.target
 
 [Service]
 Type=simple
-# NOTE: Update the WorkingDirectory to match the path where you clone this repository.
-WorkingDirectory=%h/Escritorio/psycholinguistics_deployment/portal_web
+# NOTE: Customize the WorkingDirectory path if you cloned the repository in a different directory or system locale.
+# For English system locales (default): WorkingDirectory=%h/Desktop/openclaw/portal_web
+# For Spanish system locales: WorkingDirectory=%h/Escritorio/openclaw/portal_web
+WorkingDirectory=%h/Desktop/openclaw/portal_web
 ExecStart=/usr/bin/node server.js
 Restart=always
 RestartSec=5
-# Output and error log files
-StandardOutput=append:%h/Escritorio/psycholinguistics_deployment/portal_web/server.log
-StandardError=append:%h/Escritorio/psycholinguistics_deployment/portal_web/server.log
+
+# Logs are captured automatically by journald.
+# You can inspect logs with: journalctl --user -u psycholinguistics-portal.service -f
 
 [Install]
 WantedBy=default.target
