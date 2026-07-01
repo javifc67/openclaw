@@ -142,7 +142,14 @@ if (!fs.existsSync(configPath)) {
         "token": require("crypto").randomBytes(24).toString("hex")
       },
       "port": 18789,
-      "bind": "loopback"
+      "bind": "loopback",
+      "http": {
+        "endpoints": {
+          "chatCompletions": {
+            "enabled": true
+          }
+        }
+      }
     },
     "agents": {
       "list": [
@@ -165,7 +172,7 @@ if (!fs.existsSync(configPath)) {
   };
   fs.mkdirSync(path.dirname(configPath), { recursive: true });
   fs.writeFileSync(configPath, JSON.stringify(initialConfig, null, 2), "utf8");
-  console.log("    [OK] Creado nuevo archivo ~/.openclaw/openclaw.json con un token de acceso seguro.");
+  console.log("    [OK] Creado nuevo archivo ~/.openclaw/openclaw.json con un token de acceso seguro y chatCompletions habilitado.");
 } else {
   let config;
   try {
@@ -195,6 +202,19 @@ if (!fs.existsSync(configPath)) {
   if (!config.gateway.bind) {
     config.gateway.bind = "loopback";
   }
+
+  // Ensure chatCompletions endpoint is enabled (required for web portal communication)
+  if (!config.gateway.http) {
+    config.gateway.http = {};
+  }
+  if (!config.gateway.http.endpoints) {
+    config.gateway.http.endpoints = {};
+  }
+  if (!config.gateway.http.endpoints.chatCompletions) {
+    config.gateway.http.endpoints.chatCompletions = {};
+  }
+  config.gateway.http.endpoints.chatCompletions.enabled = true;
+  console.log("    [OK] Asegurado que el endpoint OpenAI-compatible (/v1/chat/completions) está habilitado.");
 
   let agentList = [];
   let isNested = false;
