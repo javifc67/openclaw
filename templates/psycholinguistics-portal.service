@@ -11,6 +11,8 @@ WorkingDirectory=%h/Desktop/openclaw/portal_web
 ExecStart=/usr/bin/node server.js
 Restart=always
 RestartSec=5
+Environment=HOME=%h
+Environment=PATH=/usr/bin:%h/.local/bin:%h/.npm-global/bin:/usr/local/bin:/bin
 
 # Logs are captured automatically by journald.
 # You can inspect logs with: journalctl --user -u psycholinguistics-portal.service -f
