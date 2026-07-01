@@ -135,6 +135,15 @@ const configPath = path.join(home, ".openclaw", "openclaw.json");
 
 if (!fs.existsSync(configPath)) {
   const initialConfig = {
+    "gateway": {
+      "mode": "local",
+      "auth": {
+        "mode": "token",
+        "token": require("crypto").randomBytes(24).toString("hex")
+      },
+      "port": 18789,
+      "bind": "loopback"
+    },
     "agents": {
       "list": [
         {
@@ -156,7 +165,7 @@ if (!fs.existsSync(configPath)) {
   };
   fs.mkdirSync(path.dirname(configPath), { recursive: true });
   fs.writeFileSync(configPath, JSON.stringify(initialConfig, null, 2), "utf8");
-  console.log("    [OK] Creado nuevo archivo ~/.openclaw/openclaw.json");
+  console.log("    [OK] Creado nuevo archivo ~/.openclaw/openclaw.json con un token de acceso seguro.");
 } else {
   let config;
   try {
@@ -164,6 +173,27 @@ if (!fs.existsSync(configPath)) {
   } catch (err) {
     console.error("    [ERR] Error al parsear openclaw.json:", err);
     process.exit(1);
+  }
+
+  // Ensure gateway configuration and token exist
+  if (!config.gateway) {
+    config.gateway = {};
+  }
+  if (!config.gateway.auth) {
+    config.gateway.auth = {};
+  }
+  if (!config.gateway.auth.mode) {
+    config.gateway.auth.mode = "token";
+  }
+  if (!config.gateway.auth.token) {
+    config.gateway.auth.token = require("crypto").randomBytes(24).toString("hex");
+    console.log("    [OK] Generado un nuevo token de acceso seguro para OpenClaw.");
+  }
+  if (!config.gateway.port) {
+    config.gateway.port = 18789;
+  }
+  if (!config.gateway.bind) {
+    config.gateway.bind = "loopback";
   }
 
   let agentList = [];
