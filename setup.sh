@@ -167,7 +167,8 @@ if (!fs.existsSync(configPath)) {
           "id": "psycho-agent",
           "name": "Evaluador Psicolingüístico",
           "workspace": path.join(home, ".openclaw", "agents", "psycho-agent"),
-          "thinkingDefault": "off"
+          "thinkingDefault": "off",
+          "model": "google/gemini-3.5-flash"
         }
       ]
     },
@@ -188,6 +189,14 @@ if (!fs.existsSync(configPath)) {
           "api": "google-generative-ai",
           "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
           "apiKey": geminiKey.trim()
+        }
+      }
+    };
+    initialConfig.auth = {
+      "profiles": {
+        "google:default": {
+          "provider": "google",
+          "mode": "api_key"
         }
       }
     };
@@ -255,6 +264,21 @@ if (!fs.existsSync(configPath)) {
     }
     config.models.providers.google.apiKey = geminiKey.trim();
     console.log("    [OK] Configurado el API Key de Gemini en openclaw.json.");
+
+    // Ensure google auth profile is mapped
+    if (!config.auth) {
+      config.auth = {};
+    }
+    if (!config.auth.profiles) {
+      config.auth.profiles = {};
+    }
+    if (!config.auth.profiles["google:default"]) {
+      config.auth.profiles["google:default"] = {
+        "provider": "google",
+        "mode": "api_key"
+      };
+      console.log("    [OK] Asegurado perfil de autenticación para Google Gemini.");
+    }
   }
 
   let agentList = [];
@@ -278,14 +302,16 @@ if (!fs.existsSync(configPath)) {
       "id": "psycho-agent",
       "name": "Evaluador Psicolingüístico",
       "workspace": path.join(home, ".openclaw", "agents", "psycho-agent"),
-      "thinkingDefault": "off"
+      "thinkingDefault": "off",
+      "model": "google/gemini-3.5-flash"
     });
     console.log("    [OK] Agregado psycho-agent a la lista de agentes.");
   } else {
-    // Update existing psycho-agent workspace to the ~/.openclaw/agents/psycho-agent folder
+    // Update existing psycho-agent workspace to the ~/.openclaw/agents/psycho-agent folder and ensure it uses Gemini
     const idx = agentList.findIndex(a => a.id === "psycho-agent");
     agentList[idx].workspace = path.join(home, ".openclaw", "agents", "psycho-agent");
-    console.log("    [OK] El agente psycho-agent ya estaba registrado. Ruta de espacio de trabajo actualizada.");
+    agentList[idx].model = "google/gemini-3.5-flash";
+    console.log("    [OK] El agente psycho-agent ya estaba registrado. Ruta de espacio de trabajo y modelo (Gemini) actualizados.");
   }
 
   // Ensure bindings array exists and slack is bound to psycho-agent
