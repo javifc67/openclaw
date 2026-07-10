@@ -119,12 +119,14 @@ else
     echo -e "    OpenClaw ya está instalado en $openclaw_bin"
 fi
 
-# 5.5 Ask the user for Gemini API Key to streamline setup
-echo -e "${YELLOW}🔑 CONFIGURACIÓN DE API KEY DE GEMINI (GOOGLE AI STUDIO)${NC}"
+# 5.5 Ask the user for Gemini and OpenAI API Keys to streamline setup
+echo -e "${YELLOW}🔑 CONFIGURACIÓN DE API KEYS (GEMINI Y OPENAI)${NC}"
 echo -e "Para que tanto el Chat de OpenClaw como el Framework de evaluación (Python) funcionen,"
-echo -e "es necesario configurar un API Key de Gemini."
-echo -en "Introduce tu Gemini API Key (o presiona Enter para omitir y configurar más tarde): "
+echo -e "es necesario configurar las API Keys correspondientes."
+echo -en "Introduce tu Gemini API Key (o presiona Enter para omitir): "
 read -r GEMINI_KEY
+echo -en "Introduce tu OpenAI API Key (o presiona Enter para omitir): "
+read -r OPENAI_KEY
 echo ""
 
 # 6. Deploy the Agent workspace and Register it in openclaw.json
@@ -136,12 +138,13 @@ echo -e "    Archivos copiados con éxito a $AGENT_TARGET_DIR"
 
 echo -e "    Registrando agente en ~/.openclaw/openclaw.json..."
 # Use node helper to safely parse and merge agent inside openclaw.json
-GEMINI_KEY="$GEMINI_KEY" node -e '
+GEMINI_KEY="$GEMINI_KEY" OPENAI_KEY="$OPENAI_KEY" node -e '
 const fs = require("fs");
 const path = require("path");
 const home = require("os").homedir();
 const configPath = path.join(home, ".openclaw", "openclaw.json");
 const geminiKey = process.env.GEMINI_KEY;
+const openaiKey = process.env.OPENAI_KEY;
 
 if (!fs.existsSync(configPath)) {
   const initialConfig = {
@@ -183,22 +186,38 @@ if (!fs.existsSync(configPath)) {
   };
 
   if (geminiKey && geminiKey.trim() !== "") {
-    initialConfig.models = {
-      "providers": {
-        "google": {
-          "api": "google-generative-ai",
-          "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
-          "apiKey": geminiKey.trim()
-        }
-      }
+    if (!initialConfig.models) {
+      initialConfig.models = { "providers": {} };
+    }
+    initialConfig.models.providers.google = {
+      "api": "google-generative-ai",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "apiKey": geminiKey.trim()
     };
-    initialConfig.auth = {
-      "profiles": {
-        "google:default": {
-          "provider": "google",
-          "mode": "api_key"
-        }
-      }
+    if (!initialConfig.auth) {
+      initialConfig.auth = { "profiles": {} };
+    }
+    initialConfig.auth.profiles["google:default"] = {
+      "provider": "google",
+      "mode": "api_key"
+    };
+  }
+
+  if (openaiKey && openaiKey.trim() !== "") {
+    if (!initialConfig.models) {
+      initialConfig.models = { "providers": {} };
+    }
+    initialConfig.models.providers.openai = {
+      "api": "openai-completions",
+      "baseUrl": "https://api.openai.com/v1",
+      "apiKey": openaiKey.trim()
+    };
+    if (!initialConfig.auth) {
+      initialConfig.auth = { "profiles": {} };
+    }
+    initialConfig.auth.profiles["openai:default"] = {
+      "provider": "openai",
+      "mode": "api_key"
     };
   }
 
@@ -281,6 +300,39 @@ if (!fs.existsSync(configPath)) {
     }
   }
 
+  // Handle OpenAI API Key config if provided
+  if (openaiKey && openaiKey.trim() !== "") {
+    if (!config.models) {
+      config.models = {};
+    }
+    if (!config.models.providers) {
+      config.models.providers = {};
+    }
+    if (!config.models.providers.openai) {
+      config.models.providers.openai = {
+        "api": "openai-completions",
+        "baseUrl": "https://api.openai.com/v1"
+      };
+    }
+    config.models.providers.openai.apiKey = openaiKey.trim();
+    console.log("    [OK] Configurado el API Key de OpenAI en openclaw.json.");
+
+    // Ensure openai auth profile is mapped
+    if (!config.auth) {
+      config.auth = {};
+    }
+    if (!config.auth.profiles) {
+      config.auth.profiles = {};
+    }
+    if (!config.auth.profiles["openai:default"]) {
+      config.auth.profiles["openai:default"] = {
+        "provider": "openai",
+        "mode": "api_key"
+      };
+      console.log("    [OK] Asegurado perfil de autenticación para OpenAI.");
+    }
+  }
+
   let agentList = [];
   let isNested = false;
 
@@ -334,10 +386,10 @@ if (!fs.existsSync(configPath)) {
 '
 
 # 6.5 Config .env in psycholinguistics_framework
-if [ -n "$GEMINI_KEY" ]; then
+if [ -n "$GEMINI_KEY" ] || [ -n "$OPENAI_KEY" ]; then
     echo -e "${GREEN}[*] Configurando archivo .env en el Framework Psicolingüístico...${NC}"
     echo "GEMINI_API_KEY=\"$GEMINI_KEY\"" > "$FRAMEWORK_TARGET_DIR/.env"
-    echo "OPENAI_API_KEY=\"\"" >> "$FRAMEWORK_TARGET_DIR/.env"
+    echo "OPENAI_API_KEY=\"$OPENAI_KEY\"" >> "$FRAMEWORK_TARGET_DIR/.env"
     echo -e "    [OK] Archivo .env configurado con éxito en $FRAMEWORK_TARGET_DIR/.env"
 fi
 
