@@ -35,10 +35,11 @@ cd psycholinguistics_deployment
 ### What does `setup.sh` do?
 1. **Verifies system environment:** Checks if Node.js, npm, and Python 3 are present.
 2. **Installs Python Libraries:** Automatically installs `pandas`, `openpyxl`, `pyyaml`, `openai`, `google-genai`, `jsonlines`, and `python-dotenv` in the user space (compatible with modern PEP 668 environments).
-3. **Clones/Updates the Framework:** Automatically downloads the latest version of the core `psycholinguistics_framework` repository to your desktop/home directory.
-4. **Deploys and Registers the Agent:** Moves agent files to `~/.openclaw/agents/psycho-agent` and edits `~/.openclaw/openclaw.json` automatically.
-5. **Installs Web Portal Packages:** Runs `npm install` inside the web portal.
-6. **Configures and Starts Systemd Services:** Sets up `openclaw-gateway.service` and `psycholinguistics-portal.service` as user services, customizes the exact paths, and starts/enables them so they survive restarts!
+3. **Configures API Keys:** Prompts the user to enter their Gemini API Key once, and automatically configures it in both OpenClaw (`openclaw.json`) and the Python Framework (`.env`).
+4. **Clones/Updates the Framework:** Automatically downloads the latest version of the core `psycholinguistics_framework` repository to your desktop/home directory.
+5. **Deploys and Registers the Agent:** Moves agent files to `~/.openclaw/agents/psycho-agent` and edits `~/.openclaw/openclaw.json` automatically.
+6. **Installs Web Portal Packages:** Runs `npm install` inside the web portal.
+7. **Configures and Starts Systemd Services:** Sets up `openclaw-gateway.service` and `psycholinguistics-portal.service` as user services, customizes the exact paths, and starts/enables them so they survive restarts!
 
 ---
 

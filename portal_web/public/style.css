@@ -696,6 +696,10 @@ code {
   gap: 4px;
 }
 
+pre {
+  white-space: normal;
+}
+
 .console-line {
   word-break: break-all;
   white-space: pre-wrap;

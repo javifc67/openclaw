@@ -115,8 +115,17 @@ if ! command -v openclaw &> /dev/null; then
         }
     }
 else
-    echo -e "    OpenClaw ya está instalado en $(which openclaw)"
+    openclaw_bin=$(which openclaw)
+    echo -e "    OpenClaw ya está instalado en $openclaw_bin"
 fi
+
+# 5.5 Ask the user for Gemini API Key to streamline setup
+echo -e "${YELLOW}🔑 CONFIGURACIÓN DE API KEY DE GEMINI (GOOGLE AI STUDIO)${NC}"
+echo -e "Para que tanto el Chat de OpenClaw como el Framework de evaluación (Python) funcionen,"
+echo -e "es necesario configurar un API Key de Gemini."
+echo -en "Introduce tu Gemini API Key (o presiona Enter para omitir y configurar más tarde): "
+read -r GEMINI_KEY
+echo ""
 
 # 6. Deploy the Agent workspace and Register it in openclaw.json
 echo -e "${GREEN}[*] Desplegando archivos del agente (psycho-agent)...${NC}"
@@ -127,11 +136,12 @@ echo -e "    Archivos copiados con éxito a $AGENT_TARGET_DIR"
 
 echo -e "    Registrando agente en ~/.openclaw/openclaw.json..."
 # Use node helper to safely parse and merge agent inside openclaw.json
-node -e '
+GEMINI_KEY="$GEMINI_KEY" node -e '
 const fs = require("fs");
 const path = require("path");
 const home = require("os").homedir();
 const configPath = path.join(home, ".openclaw", "openclaw.json");
+const geminiKey = process.env.GEMINI_KEY;
 
 if (!fs.existsSync(configPath)) {
   const initialConfig = {
@@ -170,6 +180,19 @@ if (!fs.existsSync(configPath)) {
       }
     ]
   };
+
+  if (geminiKey && geminiKey.trim() !== "") {
+    initialConfig.models = {
+      "providers": {
+        "google": {
+          "api": "google-generative-ai",
+          "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+          "apiKey": geminiKey.trim()
+        }
+      }
+    };
+  }
+
   fs.mkdirSync(path.dirname(configPath), { recursive: true });
   fs.writeFileSync(configPath, JSON.stringify(initialConfig, null, 2), "utf8");
   console.log("    [OK] Creado nuevo archivo ~/.openclaw/openclaw.json con un token de acceso seguro y chatCompletions habilitado.");
@@ -215,6 +238,24 @@ if (!fs.existsSync(configPath)) {
   }
   config.gateway.http.endpoints.chatCompletions.enabled = true;
   console.log("    [OK] Asegurado que el endpoint OpenAI-compatible (/v1/chat/completions) está habilitado.");
+
+  // Handle Gemini API Key config if provided
+  if (geminiKey && geminiKey.trim() !== "") {
+    if (!config.models) {
+      config.models = {};
+    }
+    if (!config.models.providers) {
+      config.models.providers = {};
+    }
+    if (!config.models.providers.google) {
+      config.models.providers.google = {
+        "api": "google-generative-ai",
+        "baseUrl": "https://generativelanguage.googleapis.com/v1beta"
+      };
+    }
+    config.models.providers.google.apiKey = geminiKey.trim();
+    console.log("    [OK] Configurado el API Key de Gemini en openclaw.json.");
+  }
 
   let agentList = [];
   let isNested = false;
@@ -265,6 +306,14 @@ if (!fs.existsSync(configPath)) {
   fs.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf8");
 }
 '
+
+# 6.5 Config .env in psycholinguistics_framework
+if [ -n "$GEMINI_KEY" ]; then
+    echo -e "${GREEN}[*] Configurando archivo .env en el Framework Psicolingüístico...${NC}"
+    echo "GEMINI_API_KEY=\"$GEMINI_KEY\"" > "$FRAMEWORK_TARGET_DIR/.env"
+    echo "OPENAI_API_KEY=\"\"" >> "$FRAMEWORK_TARGET_DIR/.env"
+    echo -e "    [OK] Archivo .env configurado con éxito en $FRAMEWORK_TARGET_DIR/.env"
+fi
 
 # 7. Install Web Portal dependencies
 echo -e "${GREEN}[*] Instalando dependencias de la Web Portal...${NC}"
