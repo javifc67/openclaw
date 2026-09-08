@@ -35,30 +35,44 @@ echo -e "    Directorio del script: $SCRIPT_DIR"
 echo -e "    Portal Web: $PORTAL_DIR"
 echo -e "    Agente origen: $AGENT_SOURCE_DIR"
 
-# 2. Check for node and npm
-echo -e "${GREEN}[*] Verificando Node.js y npm...${NC}"
-if ! command -v node &> /dev/null; then
-    echo -e "${RED}[ERROR] Node.js no está instalado. Instálalo antes de continuar.${NC}"
-    exit 1
+# Determine sudo command if needed
+SUDO=""
+if [ "$EUID" -ne 0 ]; then
+    if command -v sudo &> /dev/null; then
+        SUDO="sudo"
+    fi
 fi
-if ! command -v npm &> /dev/null; then
-    echo -e "${RED}[ERROR] npm no está instalado. Instálalo antes de continuar.${NC}"
-    exit 1
+
+# 2. Check for node and npm (auto-install if missing)
+echo -e "${GREEN}[*] Verificando Node.js y npm...${NC}"
+if ! command -v node &> /dev/null || ! command -v npm &> /dev/null; then
+    echo -e "${YELLOW}[!] Node.js o npm no detectados. Instalando Node.js 20.x LTS automáticamente...${NC}"
+    if command -v apt-get &> /dev/null; then
+        $SUDO apt-get update -y
+        $SUDO apt-get install -y curl ca-certificates gnupg
+        curl -fsSL https://deb.nodesource.com/setup_20.x | $SUDO -E bash -
+        $SUDO apt-get install -y nodejs
+    else
+        echo -e "${RED}[ERROR] Gestor de paquetes apt no detectado. Instala Node.js v18+ manualmente.${NC}"
+        exit 1
+    fi
 fi
 NODE_VERSION=$(node -v)
 NPM_VERSION=$(npm -v)
 echo -e "    Node.js: $NODE_VERSION"
 echo -e "    npm: $NPM_VERSION"
 
-# 3. Check for Python 3 and install framework python dependencies
-echo -e "${GREEN}[*] Verificando Python y dependencias necesarias...${NC}"
-if ! command -v python3 &> /dev/null; then
-    echo -e "${RED}[ERROR] Python 3 no está instalado. Instálalo antes de continuar.${NC}"
-    exit 1
-fi
-if ! command -v pip &> /dev/null && ! command -v pip3 &> /dev/null; then
-    echo -e "${RED}[ERROR] pip/pip3 no está instalado. Instálalo antes de continuar.${NC}"
-    exit 1
+# 3. Check for Python 3, pip, and zip (auto-install if missing)
+echo -e "${GREEN}[*] Verificando Python 3, pip y herramientas del sistema...${NC}"
+if ! command -v python3 &> /dev/null || (! command -v pip &> /dev/null && ! command -v pip3 &> /dev/null) || ! command -v zip &> /dev/null; then
+    echo -e "${YELLOW}[!] Python 3, pip o zip no detectados. Instalando dependencias del sistema vía apt...${NC}"
+    if command -v apt-get &> /dev/null; then
+        $SUDO apt-get update -y
+        $SUDO apt-get install -y python3 python3-pip python3-venv zip
+    else
+        echo -e "${RED}[ERROR] No se pudo instalar Python 3 o pip automáticamente. Instálalos antes de continuar.${NC}"
+        exit 1
+    fi
 fi
 
 PYTHON_DEPS="pandas openpyxl pyyaml openai google-genai jsonlines python-dotenv"
@@ -107,12 +121,13 @@ fi
 echo -e "${GREEN}[*] Verificando instalación de OpenClaw...${NC}"
 if ! command -v openclaw &> /dev/null; then
     echo -e "    OpenClaw no detectado globalmente. Instalando vía npm..."
-    npm install -g openclaw || {
+    $SUDO npm install -g openclaw || npm install -g openclaw || {
         echo -e "${YELLOW}[!] Advertencia: Error instalando openclaw globalmente. Intentando con npm-global local...${NC}"
         npm install -g openclaw --prefix=~/.npm-global || {
             echo -e "${RED}[ERROR] No se pudo instalar openclaw. Asegúrate de tener permisos para realizar 'npm install -g openclaw'.${NC}"
             exit 1
         }
+        export PATH="$HOME/.npm-global/bin:$PATH"
     }
 else
     openclaw_bin=$(which openclaw)
@@ -409,6 +424,22 @@ cd "$SCRIPT_DIR"
 
 # 8. Configure Systemd services
 echo -e "${GREEN}[*] Configurando servicios Systemd para persistencia...${NC}"
+
+# Configure systemd user lingering to survive SSH logout
+if command -v loginctl &> /dev/null; then
+    echo -e "    Asegurando persistencia tras cierre de sesión (loginctl enable-linger)..."
+    $SUDO loginctl enable-linger "$USER" 2>/dev/null || loginctl enable-linger "$USER" 2>/dev/null || true
+fi
+
+# Check and open ufw ports if ufw is active
+if command -v ufw &> /dev/null; then
+    if $SUDO ufw status 2>/dev/null | grep -q "Status: active"; then
+        echo -e "    Firewall ufw activo detectado. Abriendo puertos 3000 y 18789..."
+        $SUDO ufw allow 3000/tcp 2>/dev/null || true
+        $SUDO ufw allow 18789/tcp 2>/dev/null || true
+    fi
+fi
+
 SYSTEMD_USER_DIR="$HOME_DIR/.config/systemd/user"
 mkdir -p "$SYSTEMD_USER_DIR"
 
