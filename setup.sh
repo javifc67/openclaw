@@ -155,7 +155,10 @@ if (!fs.existsSync(configPath)) {
         "token": require("crypto").randomBytes(24).toString("hex")
       },
       "port": 18789,
-      "bind": "loopback",
+      "bind": "lan",
+      "controlUi": {
+        "allowInsecureAuth": true
+      },
       "http": {
         "endpoints": {
           "chatCompletions": {
@@ -250,9 +253,14 @@ if (!fs.existsSync(configPath)) {
   if (!config.gateway.port) {
     config.gateway.port = 18789;
   }
-  if (!config.gateway.bind) {
-    config.gateway.bind = "loopback";
+  if (!config.gateway.bind || config.gateway.bind === "loopback") {
+    config.gateway.bind = "lan";
+    console.log("    [OK] Modo de enlace (bind) configurado en 'lan' para permitir acceso desde la red local.");
   }
+  if (!config.gateway.controlUi) {
+    config.gateway.controlUi = {};
+  }
+  config.gateway.controlUi.allowInsecureAuth = true;
 
   // Ensure chatCompletions endpoint is enabled (required for web portal communication)
   if (!config.gateway.http) {
@@ -444,9 +452,19 @@ else
     echo -e "    - Portal Web:       ${RED}INACTIVO / ERROR${NC} (Verifica con: systemctl --user status psycholinguistics-portal.service)"
 fi
 
+# Extract OpenClaw gateway token and primary IP
+OPENCLAW_TOKEN=$(node -e 'try { const c = JSON.parse(require("fs").readFileSync(require("path").join(require("os").homedir(), ".openclaw", "openclaw.json"), "utf8")); console.log(c.gateway?.auth?.token || ""); } catch (_) { console.log(""); }')
+SERVER_IP=$(hostname -I 2>/dev/null | awk '{print $1}')
+[ -z "$SERVER_IP" ] && SERVER_IP="<IP_DE_LA_VM>"
+
 echo -e ""
-echo -e "  🌍 Puedes acceder al Portal de Evaluación Psicolingüística en:"
-echo -e "     ${GREEN}http://localhost:3000${NC}"
+echo -e "  🌍 Portal de Evaluación Psicolingüística:"
+echo -e "     - Local:  ${GREEN}http://localhost:3000${NC}"
+echo -e "     - En red: ${GREEN}http://${SERVER_IP}:3000${NC}"
+echo -e ""
+echo -e "  ⚙️  Panel de Control / Puente de OpenClaw:"
+echo -e "     - Local:  ${GREEN}http://localhost:18789/?token=${OPENCLAW_TOKEN}${NC}"
+echo -e "     - En red: ${GREEN}http://${SERVER_IP}:18789/?token=${OPENCLAW_TOKEN}${NC}"
 echo -e ""
 echo -e "  📜 Comandos útiles de monitorización (Logs):"
 echo -e "     - Ver logs del Portal:  ${YELLOW}journalctl --user -u psycholinguistics-portal.service -f${NC}"

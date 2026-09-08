@@ -116,7 +116,15 @@ systemctl --user start psycholinguistics-portal.service
 
 ### Accessing the Web Portal
 Open your web browser and navigate to:
-👉 **`http://localhost:3000`**
+- Locally: 👉 **`http://localhost:3000`**
+- Over LAN / Server: 👉 **`http://<SERVER_IP>:3000`**
+
+### Accessing the OpenClaw Control Panel (Dashboard / Bridge)
+To monitor agents, modify LLM providers, and adjust system settings from your browser:
+- Locally: 👉 **`http://localhost:18789/?token=<YOUR_TOKEN>`**
+- Over LAN / Server: 👉 **`http://<SERVER_IP>:18789/?token=<YOUR_TOKEN>`**
+
+> **Tip:** You can check your gateway access token by running `openclaw dashboard --no-open` or reading `gateway.auth.token` in `~/.openclaw/openclaw.json`.
 
 ### Viewing Logs (Troubleshooting)
 ```bash
